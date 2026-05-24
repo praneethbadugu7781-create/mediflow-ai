@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MediFlow AI
 
-## Getting Started
+**Intelligent Medical Distribution Management System** — A premium, AI-powered SaaS platform for healthcare distributors.
 
-First, run the development server:
+![MediFlow AI](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?style=flat-square&logo=tailwind-css)
+
+## Features
+
+| Module | Description |
+|--------|-------------|
+| **Authentication** | Role-based login (Owner, Accountant, Delivery Staff, Sales) |
+| **Dashboard** | Revenue, profit, payments, charts, quick actions |
+| **Expenses** | Categories, filtering, analytics, export |
+| **AI Bill Scanner** | OCR extraction of amount, GST, vendor, category |
+| **Hospitals** | CRM, payment history, profiles |
+| **Products & Deliveries** | Distribution tracking with timeline UI |
+| **Inventory** | Stock alerts, batch numbers, expiry |
+| **Invoices & Quotations** | GST calculations, PDF download |
+| **Payments** | Overdue alerts, status tracking |
+| **Reports & GST** | Analytics, Tally-ready exports |
+| **Notifications & Settings** | Alerts, company profile, users |
+
+## Tech Stack
+
+- **Frontend:** Next.js 16, React 19, Tailwind CSS 4, ShadCN-style UI, Framer Motion, Recharts
+- **Backend:** Express.js API (`/server`)
+- **Database:** Prisma ORM (SQLite dev / PostgreSQL production)
+- **Auth:** JWT-ready (demo localStorage auth included)
+- **PDF:** jsPDF + jspdf-autotable
+- **AI OCR:** Next.js API route (Google Vision ready)
+
+## Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Setup database
+cp .env.example .env
+npm run db:push
+npm run db:generate
+
+# Run frontend (port 3000)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Run Express API (port 4000) - optional
+npm run server
+
+# Run both together
+npm run dev:all
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000/login](http://localhost:3000/login)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Demo Accounts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Role | Email | Password |
+|------|-------|----------|
+| Owner/Admin | owner@mediflow.ai | demo123 |
+| Accountant | accountant@mediflow.ai | demo123 |
+| Delivery Staff | delivery@mediflow.ai | demo123 |
 
-## Learn More
+## Design System
 
-To learn more about Next.js, take a look at the following resources:
+| Token | Value |
+|-------|-------|
+| Primary | `#2563EB` |
+| Secondary | `#0F172A` |
+| Accent | `#14B8A6` |
+| Background | `#F8FAFC` |
+| Success | `#22C55E` |
+| Warning | `#F59E0B` |
+| Danger | `#EF4444` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+UI features: glassmorphism cards, soft shadows, smooth animations, responsive sidebar, premium charts.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+src/
+├── app/
+│   ├── (auth)/          # Login, signup, forgot password
+│   ├── (dashboard)/     # All app modules
+│   └── api/             # OCR, auth API routes
+├── components/
+│   ├── ui/              # Design system components
+│   ├── layout/          # Sidebar, topbar, shell
+│   ├── charts/          # Recharts visualizations
+│   └── dashboard/       # Stat cards, widgets
+├── contexts/            # Auth provider
+└── lib/                 # Utils, types, PDF, mock data
+server/                  # Express.js API
+prisma/                  # Database schema
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Database Schema
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `prisma/schema.prisma` for full models:
+
+- **User** (roles: Owner, Admin, Accountant, Delivery, Sales)
+- **Hospital**, **Product**, **Inventory**
+- **Expense**, **Delivery**, **Invoice**, **Quotation**, **Payment**
+- **Notification**, **Company**
+
+## Production Deployment
+
+1. Set `DATABASE_URL` to PostgreSQL
+2. Configure `JWT_SECRET` and Google Vision credentials for OCR
+3. Run `npm run build && npm start`
+4. Deploy Express API separately or migrate routes to Next.js API
+
+## License
+
+Private — MediFlow AI © 2026

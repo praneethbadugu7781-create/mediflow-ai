@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  ACCOUNTANT
+  DELIVERY_STAFF
+  SALES_EXECUTIVE
+}
+
+enum DeliveryStatus {
+  PENDING
+  DELIVERED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  PARTIAL
+  OVERDUE
+}
+
+enum ExpenseCategory {
+  PETROL
+  FOOD
+  TOLL
+  TRAVEL
+  HOTEL
+  COURIER
+  MISCELLANEOUS
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(ACCOUNTANT)
+  avatar       String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  expenses     Expense[]
+  deliveries   Delivery[]
+  notifications Notification[]
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  logo        String?
+  address     String?
+  phone       String?
+  email       String?
+  gstNumber   String?
+  panNumber   String?
+  bankDetails String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Hospital {
+  id              String    @id @default(cuid())
+  name            String
+  contactPerson   String?
+  phone           String?
+  email           String?
+  address         String?
+  gstNumber       String?
+  pendingAmount   Float     @default(0)
+  totalRevenue    Float     @default(0)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deliveries      Delivery[]
+  invoices        Invoice[]
+  quotations      Quotation[]
+  payments        Payment[]
+  interactions    ClientInteraction[]
+}
+
+model ClientInteraction {
+  id         String   @id @default(cuid())
+  hospitalId String
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  type       String
+  notes      String?
+  createdAt  DateTime @default(now())
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  sku         String?   @unique
+  category    String?
+  description String?
+  unitPrice   Float     @default(0)
+  gstRate     Float     @default(18)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  inventory   Inventory?
+  deliveryItems DeliveryItem[]
+  invoiceItems  InvoiceItem[]
+  quotationItems QuotationItem[]
+}
+
+model Inventory {
+  id            String    @id @default(cuid())
+  productId     String    @unique
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity      Int       @default(0)
+  lowStockThreshold Int   @default(10)
+  batchNumber   String?
+  expiryDate    DateTime?
+  updatedAt     DateTime  @updatedAt
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  amount      Float
+  gst         Float           @default(0)
+  category    ExpenseCategory
+  vendor      String?
+  description String?
+  billImage   String?
+  expenseDate DateTime        @default(now())
+  userId      String?
+  user        User?           @relation(fields: [userId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model Delivery {
+  id          String         @id @default(cuid())
+  hospitalId  String
+  hospital    Hospital       @relation(fields: [hospitalId], references: [id])
+  status      DeliveryStatus @default(PENDING)
+  scheduledAt DateTime?
+  deliveredAt DateTime?
+  notes       String?
+  assignedTo  String?
+  user        User?          @relation(fields: [assignedTo], references: [id])
+  items       DeliveryItem[]
+  timeline    DeliveryTimeline[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model DeliveryItem {
+  id         String   @id @default(cuid())
+  deliveryId String
+  delivery   Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Int
+}
+
+model DeliveryTimeline {
+  id         String   @id @default(cuid())
+  deliveryId String
+  delivery   Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  status     String
+  note       String?
+  createdAt  DateTime @default(now())
+}
+
+model Invoice {
+  id          String        @id @default(cuid())
+  invoiceNo   String        @unique
+  hospitalId  String
+  hospital    Hospital      @relation(fields: [hospitalId], references: [id])
+  subtotal    Float
+  gstAmount   Float
+  total       Float
+  status      PaymentStatus @default(UNPAID)
+  dueDate     DateTime?
+  items       InvoiceItem[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model InvoiceItem {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Float
+  gstRate   Float
+}
+
+model Quotation {
+  id          String          @id @default(cuid())
+  quoteNo     String          @unique
+  hospitalId  String
+  hospital    Hospital        @relation(fields: [hospitalId], references: [id])
+  subtotal    Float
+  gstAmount   Float
+  total       Float
+  validUntil  DateTime?
+  items       QuotationItem[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model QuotationItem {
+  id          String    @id @default(cuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Int
+  unitPrice   Float
+  gstRate     Float
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  hospitalId  String
+  hospital    Hospital      @relation(fields: [hospitalId], references: [id])
+  amount      Float
+  status      PaymentStatus @default(UNPAID)
+  dueDate     DateTime?
+  paidAt      DateTime?
+  reference   String?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
