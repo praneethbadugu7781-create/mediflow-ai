@@ -16,6 +16,7 @@ import type { BillScanResult } from "@/lib/types";
 export default function BillScannerPage() {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<BillScanResult | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -24,6 +25,7 @@ export default function BillScannerPage() {
     setPreview(url);
     setScanning(true);
     setResult(null);
+    setScanError(null);
 
     const formData = new FormData();
     formData.append("image", file);
@@ -31,16 +33,12 @@ export default function BillScannerPage() {
     try {
       const res = await fetch("/api/ocr/scan", { method: "POST", body: formData });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "Bill scan failed.");
+      }
       setResult(data);
-    } catch {
-      setResult({
-        amount: 2450,
-        gst: 441,
-        date: new Date().toISOString().split("T")[0],
-        vendor: "Indian Oil Petrol Pump",
-        category: "PETROL",
-        confidence: 94,
-      });
+    } catch (error) {
+      setScanError(error instanceof Error ? error.message : "Bill scan failed.");
     } finally {
       setScanning(false);
     }
@@ -58,7 +56,7 @@ export default function BillScannerPage() {
         <Card className="ai-glow overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><ScanLine className="h-5 w-5 text-[#14B8A6]" /> Upload Bill</CardTitle>
-            <CardDescription>Supports JPG, PNG, PDF receipts</CardDescription>
+            <CardDescription>Supports JPG and PNG receipt images</CardDescription>
           </CardHeader>
           <CardContent>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
@@ -107,6 +105,18 @@ export default function BillScannerPage() {
                         className="rounded-full bg-[#2563EB]/10 px-3 py-1 text-xs font-medium text-[#2563EB]">{s}</motion.span>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {scanError && !scanning && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+              <Card>
+                <CardContent className="flex min-h-[180px] flex-col items-center justify-center gap-3 py-10 text-center">
+                  <p className="text-lg font-semibold text-[#EF4444]">Scan failed</p>
+                  <p className="max-w-sm text-sm text-slate-500">{scanError}</p>
+                  <Button variant="outline" onClick={() => fileRef.current?.click()}>Try another image</Button>
                 </CardContent>
               </Card>
             </motion.div>

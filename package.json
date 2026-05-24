@@ -15,6 +15,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@google-cloud/vision": "^5.3.6",
     "@hookform/resolvers": "^5.4.0",
     "@prisma/client": "^7.8.0",
     "@radix-ui/react-avatar": "^1.1.11",
