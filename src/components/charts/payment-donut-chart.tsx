@@ -22,7 +22,7 @@ export function PaymentDonutChart() {
         if (res.ok) return res.json();
         return {};
       })
-      .then((resData) => {
+      .then((resData: any) => {
         if (resData.paymentStatusData) {
           setData(resData.paymentStatusData);
         }

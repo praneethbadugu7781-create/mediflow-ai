@@ -22,7 +22,7 @@ export function ExpensePieChart() {
         if (res.ok) return res.json();
         return {};
       })
-      .then((resData) => {
+      .then((resData: any) => {
         if (resData.expenseByCategory) {
           setData(resData.expenseByCategory);
         }

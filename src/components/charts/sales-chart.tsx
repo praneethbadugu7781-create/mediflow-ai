@@ -31,7 +31,7 @@ export function SalesChart() {
         if (res.ok) return res.json();
         return {};
       })
-      .then((resData) => {
+      .then((resData: any) => {
         if (resData.salesChartData) {
           setData(resData.salesChartData);
         }
