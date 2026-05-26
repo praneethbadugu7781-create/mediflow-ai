@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ScanLine, Upload, Sparkles, Check, Loader2, ImageIcon } from "lucide-react";
+import { ScanLine, Upload, Sparkles, Check, Loader2, ImageIcon, Save } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +14,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EXPENSE_CATEGORIES } from "@/lib/constants";
 import type { BillScanResult } from "@/lib/types";
 
+const API_URL = "http://localhost:4000";
+
 export default function BillScannerPage() {
+  const router = useRouter();
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<BillScanResult | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Editable form state (populated from scan result)
+  const [editAmount, setEditAmount] = useState("");
+  const [editGst, setEditGst] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editVendor, setEditVendor] = useState("");
+  const [editCategory, setEditCategory] = useState("");
 
   const handleUpload = async (file: File) => {
     const url = URL.createObjectURL(file);
@@ -26,6 +39,7 @@ export default function BillScannerPage() {
     setScanning(true);
     setResult(null);
     setScanError(null);
+    setSaved(false);
 
     const formData = new FormData();
     formData.append("image", file);
@@ -37,10 +51,42 @@ export default function BillScannerPage() {
         throw new Error(data.error ?? "Bill scan failed.");
       }
       setResult(data);
+      setEditAmount(String(data.amount || ""));
+      setEditGst(String(data.gst || ""));
+      setEditDate(data.date || new Date().toISOString().split("T")[0]);
+      setEditVendor(data.vendor || "");
+      setEditCategory(data.category || "MISCELLANEOUS");
     } catch (error) {
       setScanError(error instanceof Error ? error.message : "Bill scan failed.");
     } finally {
       setScanning(false);
+    }
+  };
+
+  const handleSaveToExpenses = async () => {
+    if (!editAmount || !editCategory) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/api/expenses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: editAmount,
+          gst: editGst || "0",
+          category: editCategory,
+          vendor: editVendor,
+          description: `AI Scanned Bill${result?.source === "google-cloud-vision" ? " (Cloud Vision)" : " (Simulated OCR)"}`,
+          expenseDate: editDate,
+        }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => router.push("/expenses"), 1500);
+      }
+    } catch (err) {
+      console.error("Failed to save expense:", err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -130,22 +176,31 @@ export default function BillScannerPage() {
                     <CardTitle className="flex items-center gap-2"><Check className="h-5 w-5 text-[#22C55E]" /> Extracted Data</CardTitle>
                     <Badge variant="success">{result.confidence}% confidence</Badge>
                   </div>
-                  <CardDescription>Review and edit before saving</CardDescription>
+                  <CardDescription>Review and edit before saving to database</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2"><Label>Amount (₹)</Label><Input type="number" defaultValue={result.amount} /></div>
-                    <div className="space-y-2"><Label>GST (₹)</Label><Input type="number" defaultValue={result.gst} /></div>
-                    <div className="space-y-2"><Label>Date</Label><Input type="date" defaultValue={result.date} /></div>
+                    <div className="space-y-2"><Label>Amount (₹)</Label><Input type="number" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} /></div>
+                    <div className="space-y-2"><Label>GST (₹)</Label><Input type="number" value={editGst} onChange={(e) => setEditGst(e.target.value)} /></div>
+                    <div className="space-y-2"><Label>Date</Label><Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} /></div>
                     <div className="space-y-2"><Label>Category</Label>
-                      <Select defaultValue={result.category}>
+                      <Select value={editCategory} onValueChange={setEditCategory}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>{EXPENSE_CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-2"><Label>Vendor Name</Label><Input defaultValue={result.vendor} /></div>
-                  <Button className="w-full">Save to Expenses</Button>
+                  <div className="space-y-2"><Label>Vendor Name</Label><Input value={editVendor} onChange={(e) => setEditVendor(e.target.value)} /></div>
+                  {saved ? (
+                    <div className="flex items-center justify-center gap-2 rounded-xl bg-[#22C55E]/10 py-3 text-[#22C55E]">
+                      <Check className="h-5 w-5" />
+                      <span className="font-semibold">Saved! Redirecting to Expenses...</span>
+                    </div>
+                  ) : (
+                    <Button className="w-full" onClick={handleSaveToExpenses} disabled={saving}>
+                      {saving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving to Database...</> : <><Save className="h-4 w-4" /> Save to Expenses</>}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>

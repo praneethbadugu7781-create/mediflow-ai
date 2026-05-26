@@ -23,7 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS, BRAND } from "@/lib/constants";
+import { NAV_ITEMS, BRAND, ROLE_PERMISSIONS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -77,7 +77,14 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => {
+          if (!user) return false;
+          const permissions = ROLE_PERMISSIONS[user.role] || [];
+          if (permissions.includes("*")) return true;
+          const segment = item.href.replace(/^\//, "");
+          if (segment === "notifications" || segment === "") return true;
+          return permissions.includes(segment);
+        }).map((item) => {
           const Icon = iconMap[item.icon] || LayoutDashboard;
           const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (

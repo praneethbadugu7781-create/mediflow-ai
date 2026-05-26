@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, Bell, Menu, LogOut, Plus, ScanLine } from "lucide-react";
@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth-context";
-import { mockNotifications } from "@/lib/mock-data";
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -18,7 +17,19 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
-  const unreadCount = mockNotifications.filter((n) => !n.isRead).length;
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("http://localhost:4000/api/notifications")
+      .then((res) => {
+        if (res.ok) return res.json();
+        return [];
+      })
+      .then((data) => setNotifications(data))
+      .catch((err) => console.error("Failed to load notifications in topbar:", err));
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-200/60 bg-white/70 px-4 backdrop-blur-xl lg:px-6">
@@ -70,7 +81,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                   View all
                 </Link>
               </div>
-              {mockNotifications.slice(0, 3).map((n) => (
+              {notifications.slice(0, 3).map((n) => (
                 <div key={n.id} className="rounded-xl p-3 hover:bg-slate-50">
                   <p className="text-sm font-medium">{n.title}</p>
                   <p className="text-xs text-slate-500 line-clamp-2">{n.message}</p>
