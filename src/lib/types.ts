@@ -75,4 +75,5 @@ export interface BillScanResult {
   vendor: string;
   category: string;
   confidence: number;
+  source?: string;
 }
